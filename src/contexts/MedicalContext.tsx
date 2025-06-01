@@ -1,7 +1,6 @@
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Patient, Consultation, AIAnalysis } from '@/types/medical';
-import { supabase } from '@/lib/supabase';
 
 interface MedicalContextType {
   currentPatient: Patient | null;
@@ -48,37 +47,21 @@ export const MedicalProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   const analyzeWithAI = useCallback(async (consultation: Consultation): Promise<AIAnalysis> => {
-    try {
-      console.log('Analyzing consultation with AI:', consultation);
-      
-      const { data, error } = await supabase.functions.invoke('analyze-consultation', {
-        body: { consultation }
-      });
-
-      if (error) {
-        throw new Error(`Supabase function error: ${error.message}`);
-      }
-
-      if (!data?.analysis) {
-        throw new Error('Invalid response from AI analysis');
-      }
-
-      return data.analysis;
-    } catch (error) {
-      console.error('AI Analysis Error:', error);
-      
-      // Fallback response en cas d'erreur
-      return {
-        clinicalSynthesis: `Synthèse clinique pour ${consultation.motif}: ${consultation.symptoms}`,
-        differentialDiagnosis: [
-          'Diagnostic principal probable',
-          'Diagnostic différentiel 1', 
-          'Diagnostic différentiel 2'
-        ],
-        recommendedTreatment: 'Traitement symptomatique recommandé. Consultation de suivi nécessaire.',
-        confidence: 0.7
-      };
-    }
+    // Simulation d'une analyse IA
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          clinicalSynthesis: `Synthèse clinique pour ${consultation.motif}: ${consultation.symptoms}`,
+          differentialDiagnosis: [
+            'Diagnostic principal probable',
+            'Diagnostic différentiel 1', 
+            'Diagnostic différentiel 2'
+          ],
+          recommendedTreatment: 'Traitement symptomatique recommandé. Consultation de suivi nécessaire.',
+          confidence: 0.8
+        });
+      }, 2000);
+    });
   }, []);
 
   return (
