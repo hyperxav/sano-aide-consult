@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Prescription, Download, Edit, Plus } from 'lucide-react';
+import { Pill, Download, Edit, Plus } from 'lucide-react';
 import { useMedical } from '@/contexts/MedicalContext';
 
 const Traitement = () => {
@@ -35,7 +34,7 @@ const Traitement = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center space-x-3">
-        <Prescription className="w-8 h-8 text-medical-primary" />
+        <Pill className="w-8 h-8 text-medical-primary" />
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Traitement</h1>
           <p className="text-gray-600">Prescription et recommandations thérapeutiques</p>
@@ -48,7 +47,7 @@ const Traitement = () => {
           <Card className="medical-card">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="flex items-center space-x-2">
-                <Prescription className="w-5 h-5" />
+                <Pill className="w-5 h-5" />
                 <span>Ordonnance</span>
               </CardTitle>
               <Button variant="outline" size="sm">

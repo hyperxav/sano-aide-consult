@@ -4,7 +4,7 @@ import { NavLink } from 'react-router-dom';
 import { 
   FileText, 
   Search, 
-  Prescription, 
+  Pill, 
   FileText as Letter,
   User,
   Menu
@@ -15,7 +15,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 const navigationItems = [
   { to: '/consultation', label: 'Consultation', icon: FileText },
   { to: '/diagnostic', label: 'Diagnostic', icon: Search },
-  { to: '/traitement', label: 'Traitement', icon: Prescription },
+  { to: '/traitement', label: 'Traitement', icon: Pill },
   { to: '/courrier', label: 'Courrier', icon: Letter },
   { to: '/etp', label: 'Fiche ETP', icon: User },
 ];

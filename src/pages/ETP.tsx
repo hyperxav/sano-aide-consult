@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -92,7 +91,7 @@ const ETP = () => {
                 Consultez immédiatement ou appelez le 15 si vous ressentez un ou plusieurs de ces symptômes :
               </p>
               <div className="space-y-3">
-                {etpData.warningSignes.map((sign, index) => (
+                {etpData.warningSigns.map((sign, index) => (
                   <div key={index} className="flex items-start space-x-3 p-3 bg-medical-danger/5 rounded-lg border border-medical-danger/20">
                     <AlertTriangle className="w-4 h-4 text-medical-danger mt-0.5 flex-shrink-0" />
                     <p className="text-gray-700 font-medium">{sign}</p>
