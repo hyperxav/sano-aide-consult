@@ -21,12 +21,37 @@ const VoiceDictation: React.FC<VoiceDictationProps> = ({ onDictationComplete }) 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
+  // Fonction pour détecter le format audio supporté
+  const getSupportedMimeType = () => {
+    const types = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+      'audio/wav',
+      'audio/ogg;codecs=opus',
+      'audio/ogg'
+    ];
+
+    for (const type of types) {
+      if (MediaRecorder.isTypeSupported(type)) {
+        console.log('Format audio supporté:', type);
+        return type;
+      }
+    }
+    
+    // Fallback - la plupart des navigateurs supportent au moins un format basique
+    return 'audio/webm';
+  };
+
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const supportedMimeType = getSupportedMimeType();
+      
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
+        mimeType: supportedMimeType
       });
+      
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -37,7 +62,7 @@ const VoiceDictation: React.FC<VoiceDictationProps> = ({ onDictationComplete }) 
       };
 
       mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioBlob = new Blob(audioChunksRef.current, { type: supportedMimeType });
         await sendAudioToWebhook(audioBlob);
         
         // Arrêter le stream
@@ -49,7 +74,16 @@ const VoiceDictation: React.FC<VoiceDictationProps> = ({ onDictationComplete }) 
       toast.info('🎙️ Enregistrement en cours...');
     } catch (error) {
       console.error('Erreur lors du démarrage de l\'enregistrement:', error);
-      toast.error('Impossible d\'accéder au microphone');
+      
+      if (error.name === 'NotAllowedError') {
+        toast.error('Accès au microphone refusé. Veuillez autoriser l\'accès au microphone dans les paramètres de votre navigateur.');
+      } else if (error.name === 'NotFoundError') {
+        toast.error('Aucun microphone détecté. Veuillez vérifier qu\'un microphone est connecté.');
+      } else if (error.name === 'NotSupportedError') {
+        toast.error('Enregistrement audio non supporté par votre navigateur.');
+      } else {
+        toast.error('Impossible d\'accéder au microphone');
+      }
     }
   };
 
@@ -68,6 +102,7 @@ const VoiceDictation: React.FC<VoiceDictationProps> = ({ onDictationComplete }) 
       
       // Préparer le FormData avec le fichier audio
       const formData = new FormData();
+      // Utiliser l'extension .webm par défaut pour la compatibilité
       formData.append('file', audioBlob, 'dictation.webm');
 
       console.log('Envoi du fichier audio vers le webhook:', webhookUrl);
