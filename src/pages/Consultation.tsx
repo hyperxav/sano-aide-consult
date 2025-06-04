@@ -9,6 +9,14 @@ import { FileText, Upload, Mic, Brain } from 'lucide-react';
 import { useMedical } from '@/contexts/MedicalContext';
 import { Consultation as ConsultationType } from '@/types/medical';
 import { toast } from 'sonner';
+import VoiceDictation from '@/components/VoiceDictation';
+
+interface DictationResult {
+  motif: string;
+  symptomes: string;
+  examen: string;
+  antecedents: string;
+}
 
 const Consultation = () => {
   const { currentConsultation, updateConsultation, analyzeWithAI } = useMedical();
@@ -17,11 +25,22 @@ const Consultation = () => {
     patientName: '',
     motif: '',
     symptoms: '',
-    clinicalExam: ''
+    clinicalExam: '',
+    antecedents: ''
   });
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleDictationComplete = (result: DictationResult) => {
+    setFormData(prev => ({
+      ...prev,
+      motif: result.motif,
+      symptoms: result.symptomes,
+      clinicalExam: result.examen,
+      antecedents: result.antecedents
+    }));
   };
 
   const handleAnalyzeWithAI = async () => {
@@ -129,11 +148,37 @@ const Consultation = () => {
                 onChange={(e) => handleInputChange('clinicalExam', e.target.value)}
               />
             </div>
+
+            <div>
+              <Label htmlFor="antecedents">Antécédents médicaux</Label>
+              <Textarea
+                id="antecedents"
+                placeholder="Antécédents médicaux du patient..."
+                className="min-h-[80px]"
+                value={formData.antecedents}
+                onChange={(e) => handleInputChange('antecedents', e.target.value)}
+              />
+            </div>
           </CardContent>
         </Card>
 
         {/* Documents et actions */}
         <div className="space-y-6">
+          <Card className="medical-card">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Mic className="w-5 h-5" />
+                <span>Dictée vocale</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 mb-4">
+                Enregistrez votre dictée médicale pour remplir automatiquement les champs de la consultation.
+              </p>
+              <VoiceDictation onDictationComplete={handleDictationComplete} />
+            </CardContent>
+          </Card>
+
           <Card className="medical-card">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
