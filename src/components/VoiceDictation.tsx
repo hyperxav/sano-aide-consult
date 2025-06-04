@@ -24,7 +24,9 @@ const VoiceDictation: React.FC<VoiceDictationProps> = ({ onDictationComplete }) 
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -35,7 +37,7 @@ const VoiceDictation: React.FC<VoiceDictationProps> = ({ onDictationComplete }) 
       };
 
       mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         await sendAudioToWebhook(audioBlob);
         
         // Arrêter le stream
@@ -56,35 +58,49 @@ const VoiceDictation: React.FC<VoiceDictationProps> = ({ onDictationComplete }) 
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       setIsProcessing(true);
-      toast.info('📝 Traitement de la dictée en cours...');
+      toast.info('📝 Envoi vers le webhook en cours...');
     }
   };
 
   const sendAudioToWebhook = async (audioBlob: Blob) => {
     try {
-      // URL du webhook à configurer - pour l'instant on simule une réponse
-      const webhookUrl = 'https://example.com/webhook'; // À remplacer par l'URL réelle
+      const webhookUrl = 'https://manolox9.app.n8n.cloud/webhook-test/sano-dictee';
       
-      // Simulation d'un appel webhook pour la démo
-      // Dans un vrai scénario, on enverrait le fichier audio
+      // Préparer le FormData avec le fichier audio
       const formData = new FormData();
-      formData.append('audio', audioBlob, 'dictation.wav');
+      formData.append('file', audioBlob, 'dictation.webm');
 
-      // Simulation d'une réponse du webhook
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const mockResponse: DictationResult = {
-        motif: 'Douleur abdominale aiguë',
-        symptomes: 'Douleur épigastrique irradiant vers le dos, nausées, vomissements',
-        examen: 'Abdomen sensible à la palpation, défense musculaire en épigastre',
-        antecedents: 'Antécédents de lithiase biliaire, tabagisme'
-      };
+      console.log('Envoi du fichier audio vers le webhook:', webhookUrl);
 
-      onDictationComplete(mockResponse);
-      toast.success('✅ Dictée analysée, les champs ont été complétés automatiquement.');
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Réponse du webhook:', result);
+
+      // Traiter la réponse du webhook
+      if (result && typeof result === 'object') {
+        const dictationResult: DictationResult = {
+          motif: result.motif || '',
+          symptomes: result.symptomes || '',
+          examen: result.examen || '',
+          antecedents: result.antecedents || ''
+        };
+
+        onDictationComplete(dictationResult);
+        toast.success('✅ Dictée analysée, les champs ont été complétés automatiquement.');
+      } else {
+        toast.warning('⚠️ Réponse du webhook reçue mais format inattendu');
+      }
     } catch (error) {
       console.error('Erreur lors de l\'envoi au webhook:', error);
-      toast.error('Erreur lors du traitement de la dictée');
+      toast.error('Erreur lors de l\'envoi de la dictée au webhook');
     } finally {
       setIsProcessing(false);
     }
