@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Mic, Square, Loader2 } from 'lucide-react';
@@ -39,7 +38,6 @@ const VoiceDictation: React.FC<VoiceDictationProps> = ({ onDictationComplete }) 
       }
     }
     
-    // Fallback - la plupart des navigateurs supportent au moins un format basique
     return 'audio/webm';
   };
 
@@ -63,7 +61,7 @@ const VoiceDictation: React.FC<VoiceDictationProps> = ({ onDictationComplete }) 
 
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: supportedMimeType });
-        await sendAudioToWebhook(audioBlob);
+        await processAudioWithAI(audioBlob);
         
         // Arrêter le stream
         stream.getTracks().forEach(track => track.stop());
@@ -92,50 +90,76 @@ const VoiceDictation: React.FC<VoiceDictationProps> = ({ onDictationComplete }) 
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       setIsProcessing(true);
-      toast.info('📝 Envoi vers le webhook en cours...');
+      toast.info('🤖 Traitement de l\'audio en cours...');
     }
   };
 
-  const sendAudioToWebhook = async (audioBlob: Blob) => {
+  const processAudioWithAI = async (audioBlob: Blob) => {
     try {
-      const webhookUrl = 'https://manolox9.app.n8n.cloud/webhook-test/sano-dictee';
-      
-      // Préparer le FormData avec le fichier audio
+      // 1. First, transcribe the audio using Whisper API
       const formData = new FormData();
-      // Utiliser l'extension .webm par défaut pour la compatibilité
       formData.append('file', audioBlob, 'dictation.webm');
+      formData.append('model', 'whisper-1');
+      formData.append('language', 'fr');
 
-      console.log('Envoi du fichier audio vers le webhook:', webhookUrl);
-
-      const response = await fetch(webhookUrl, {
+      const transcriptionResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
+        },
+        body: formData
       });
 
-      if (!response.ok) {
-        throw new Error(`Erreur HTTP: ${response.status}`);
+      if (!transcriptionResponse.ok) {
+        throw new Error(`Erreur de transcription: ${transcriptionResponse.status}`);
       }
 
-      const result = await response.json();
-      console.log('Réponse du webhook:', result);
+      const transcriptionResult = await transcriptionResponse.json();
+      const transcribedText = transcriptionResult.text;
 
-      // Traiter la réponse du webhook
-      if (result && typeof result === 'object') {
-        const dictationResult: DictationResult = {
-          motif: result.motif || '',
-          symptomes: result.symptomes || '',
-          examen: result.examen || '',
-          antecedents: result.antecedents || ''
-        };
+      // 2. Then, analyze the transcription with ChatGPT
+      const analysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "gpt-4-turbo-preview",
+          messages: [
+            {
+              role: "system",
+              content: `Vous êtes un assistant médical expert. Analysez la transcription de la dictée médicale et structurez-la dans les catégories suivantes:
+                - motif: le motif principal de la consultation
+                - symptomes: la description détaillée des symptômes
+                - examen: les résultats de l'examen clinique
+                - antecedents: les antécédents médicaux mentionnés
+                
+                Répondez uniquement avec un objet JSON contenant ces quatre champs, sans autre texte.`
+            },
+            {
+              role: "user",
+              content: transcribedText
+            }
+          ],
+          temperature: 0.3
+        })
+      });
 
-        onDictationComplete(dictationResult);
-        toast.success('✅ Dictée analysée, les champs ont été complétés automatiquement.');
-      } else {
-        toast.warning('⚠️ Réponse du webhook reçue mais format inattendu');
+      if (!analysisResponse.ok) {
+        throw new Error(`Erreur d'analyse: ${analysisResponse.status}`);
       }
+
+      const analysisResult = await analysisResponse.json();
+      const structuredData = JSON.parse(analysisResult.choices[0].message.content);
+
+      // 3. Update the form with the structured data
+      onDictationComplete(structuredData);
+      toast.success('✅ Dictée analysée avec succès');
+
     } catch (error) {
-      console.error('Erreur lors de l\'envoi au webhook:', error);
-      toast.error('Erreur lors de l\'envoi de la dictée au webhook');
+      console.error('Erreur lors du traitement:', error);
+      toast.error('Erreur lors du traitement de la dictée');
     } finally {
       setIsProcessing(false);
     }
