@@ -10,6 +10,7 @@ import { useMedical } from '@/contexts/MedicalContext';
 import { Consultation as ConsultationType } from '@/types/medical';
 import { toast } from 'sonner';
 import VoiceDictation from '@/components/VoiceDictation';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface DictationResult {
   motif: string;
@@ -22,6 +23,9 @@ const Consultation = () => {
   const { currentConsultation, updateConsultation, analyzeWithAI } = useMedical();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [responseStructure, setResponseStructure] = useState<DictationResult | null>(null);
+  const [iaQuestion, setIaQuestion] = useState<string>("");
+  const [showIaQuestion, setShowIaQuestion] = useState<boolean>(false);
+  const [isLoadingRelance, setIsLoadingRelance] = useState<boolean>(false);
   const [formData, setFormData] = useState({
     patientName: '',
     motif: '',
@@ -34,7 +38,7 @@ const Consultation = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleDictationComplete = (result: DictationResult) => {
+  const handleDictationComplete = async (result: DictationResult) => {
     setFormData(prev => ({
       ...prev,
       motif: result.motif,
@@ -43,6 +47,46 @@ const Consultation = () => {
       antecedents: result.antecedents
     }));
     setResponseStructure(result);
+    
+    // Appeler l'API de relance après avoir structuré les données
+    await handleRelanceIA(result);
+  };
+  
+  const handleRelanceIA = async (data: DictationResult) => {
+    setIsLoadingRelance(true);
+    try {
+      const response = await fetch('https://sano-api-production.up.railway.app/api/relance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          motif: data.motif,
+          symptomes: data.symptomes,
+          examen: data.examen,
+          antecedents: data.antecedents
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Erreur lors de la relance IA');
+      }
+      
+      const responseData = await response.json();
+      setIaQuestion(responseData.question);
+      
+      // Afficher ou masquer selon la réponse
+      if (responseData.question === "Ok") {
+        setShowIaQuestion(false);
+      } else {
+        setShowIaQuestion(true);
+      }
+    } catch (error) {
+      toast.error('Erreur lors de la relance IA');
+      console.error('Relance IA Error:', error);
+    } finally {
+      setIsLoadingRelance(false);
+    }
   };
 
   const handleAnalyzeWithAI = async () => {
@@ -160,6 +204,24 @@ const Consultation = () => {
                 onChange={(e) => handleInputChange('antecedents', e.target.value)}
               />
             </div>
+            
+            {/* Bloc de Relance IA */}
+            {showIaQuestion && (
+              <Alert 
+                id="iaQuestionField" 
+                variant="default"
+                className="border-amber-400 bg-amber-50"
+              >
+                <AlertDescription className="text-amber-800 font-medium">
+                  {isLoadingRelance ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin h-4 w-4 border-2 border-amber-500 rounded-full border-t-transparent"></div>
+                      <span>Analyse en cours...</span>
+                    </div>
+                  ) : iaQuestion}
+                </AlertDescription>
+              </Alert>
+            )}
           </CardContent>
         </Card>
 
