@@ -10,6 +10,7 @@ import Consultation from "./pages/Consultation";
 import Diagnostic from "./pages/Diagnostic";
 import Traitement from "./pages/Traitement";
 import Courrier from "./pages/Courrier";
+import ArretTravail from "./pages/ArretTravail";
 import ETP from "./pages/ETP";
 import NotFound from "./pages/NotFound";
 
@@ -29,6 +30,7 @@ const App = () => (
               <Route path="/diagnostic" element={<Diagnostic />} />
               <Route path="/traitement" element={<Traitement />} />
               <Route path="/courrier" element={<Courrier />} />
+              <Route path="/arret-travail" element={<ArretTravail />} />
               <Route path="/etp" element={<ETP />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

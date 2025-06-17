@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { FileText, Upload, Mic, Brain, FileDown } from 'lucide-react';
+import { FileText, Upload, Mic, Brain } from 'lucide-react';
 import { useMedical } from '@/contexts/MedicalContext';
 import { Consultation as ConsultationType } from '@/types/medical';
 import { toast } from 'sonner';
@@ -21,19 +21,13 @@ interface DictationResult {
 const Consultation = () => {
   const { currentConsultation, updateConsultation, analyzeWithAI } = useMedical();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [isGeneratingArret, setIsGeneratingArret] = useState(false);
   const [responseStructure, setResponseStructure] = useState<DictationResult | null>(null);
   const [formData, setFormData] = useState({
     patientName: '',
-    patientNom: '',
-    patientPrenom: '',
-    patientNaissance: '',
     motif: '',
     symptoms: '',
     clinicalExam: '',
-    antecedents: '',
-    dateDebut: '',
-    dateFin: ''
+    antecedents: ''
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -94,74 +88,6 @@ const Consultation = () => {
     }
   };
 
-  const handleGenerateArret = async () => {
-    if (!formData.patientNom || !formData.patientPrenom || !formData.dateDebut || !formData.dateFin) {
-      toast.error('Veuillez remplir tous les champs patient et dates');
-      return;
-    }
-
-    if (!responseStructure?.motif) {
-      toast.error('Veuillez d\'abord structurer les données de consultation');
-      return;
-    }
-
-    setIsGeneratingArret(true);
-    try {
-      const requestBody = {
-        patient: {
-          nom: formData.patientNom,
-          prenom: formData.patientPrenom,
-          dateNaissance: formData.patientNaissance
-        },
-        motif: responseStructure.motif,
-        dates: {
-          debut: formData.dateDebut,
-          fin: formData.dateFin
-        }
-      };
-
-      const response = await fetch('https://sano-api-production.up.railway.app/api/arret', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody)
-      });
-
-      if (!response.ok) {
-        throw new Error(`Erreur HTTP: ${response.status}`);
-      }
-
-      // Check if response is PDF
-      const contentType = response.headers.get('Content-Type');
-      if (!contentType?.includes('application/pdf')) {
-        throw new Error('La réponse n\'est pas un fichier PDF');
-      }
-
-      // Get PDF blob
-      const pdfBlob = await response.blob();
-      
-      // Create download link
-      const url = window.URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Arret_${formData.patientNom}_${formData.dateDebut}.pdf`;
-      
-      // Trigger download
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      toast.success('✅ Arrêt de travail généré');
-    } catch (error) {
-      console.error('Erreur lors de la génération de l\'arrêt:', error);
-      toast.error('Erreur lors de la génération de l\'arrêt de travail');
-    } finally {
-      setIsGeneratingArret(false);
-    }
-  };
-
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center space-x-3">
@@ -178,41 +104,10 @@ const Consultation = () => {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <FileText className="w-5 h-5" />
-              <span>Informations patient</span>
+              <span>Informations consultation</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="patientNom">Nom *</Label>
-                <Input
-                  id="patientNom"
-                  placeholder="Nom du patient"
-                  value={formData.patientNom}
-                  onChange={(e) => handleInputChange('patientNom', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="patientPrenom">Prénom *</Label>
-                <Input
-                  id="patientPrenom"
-                  placeholder="Prénom du patient"
-                  value={formData.patientPrenom}
-                  onChange={(e) => handleInputChange('patientPrenom', e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="patientNaissance">Date de naissance</Label>
-              <Input
-                id="patientNaissance"
-                type="date"
-                value={formData.patientNaissance}
-                onChange={(e) => handleInputChange('patientNaissance', e.target.value)}
-              />
-            </div>
-
             <div>
               <Label htmlFor="motif">Motif de consultation *</Label>
               <Input
@@ -264,31 +159,6 @@ const Consultation = () => {
                 value={formData.antecedents}
                 onChange={(e) => handleInputChange('antecedents', e.target.value)}
               />
-            </div>
-
-            {/* Dates d'arrêt de travail */}
-            <div className="border-t pt-4">
-              <h3 className="text-lg font-semibold mb-3">Arrêt de travail</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="dateDebut">Date de début *</Label>
-                  <Input
-                    id="dateDebut"
-                    type="date"
-                    value={formData.dateDebut}
-                    onChange={(e) => handleInputChange('dateDebut', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="dateFin">Date de fin *</Label>
-                  <Input
-                    id="dateFin"
-                    type="date"
-                    value={formData.dateFin}
-                    onChange={(e) => handleInputChange('dateFin', e.target.value)}
-                  />
-                </div>
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -358,37 +228,6 @@ const Consultation = () => {
                   <>
                     <Brain className="w-4 h-4 mr-2" />
                     Analyser avec IA
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="medical-card border-green-200">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2 text-green-700">
-                <FileDown className="w-5 h-5" />
-                <span>Arrêt de travail</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600 mb-4">
-                Générez automatiquement un arrêt de travail au format PDF.
-              </p>
-              <Button 
-                onClick={handleGenerateArret}
-                disabled={isGeneratingArret}
-                variant="secondary"
-                className="w-full"
-              >
-                {isGeneratingArret ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
-                    Génération en cours...
-                  </>
-                ) : (
-                  <>
-                    📝 Arrêt de travail
                   </>
                 )}
               </Button>
