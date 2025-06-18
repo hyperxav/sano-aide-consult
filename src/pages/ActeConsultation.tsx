@@ -1,10 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calculator, FileText, AlertCircle } from 'lucide-react';
+import { Calculator, FileText, AlertCircle, Brain } from 'lucide-react';
 import { useMedical } from '@/contexts/MedicalContext';
 
 interface NGAPCode {
@@ -17,6 +19,7 @@ interface NGAPCode {
 const ngapCodes: NGAPCode[] = [
   { code: "C", libelle: "Consultation au cabinet", tarif: 25, conditions: "Consultation de base" },
   { code: "CS", libelle: "Consultation avec majoration", tarif: 46, conditions: "Consultation complexe ou urgente" },
+  { code: "COE", libelle: "Consultation obligatoire de l'enfant", tarif: 54, conditions: "Enfant < 2 ans pour suivi/vaccination" },
   { code: "V", libelle: "Visite à domicile", tarif: 25, conditions: "Déplacement au domicile" },
   { code: "VS", libelle: "Visite à domicile avec majoration", tarif: 46, conditions: "Visite urgente ou complexe" },
   { code: "K", libelle: "Acte technique (coefficient 1)", tarif: 2.28, conditions: "Geste technique simple" },
@@ -27,15 +30,68 @@ const ngapCodes: NGAPCode[] = [
 
 const ActeConsultation = () => {
   const { currentConsultation } = useMedical();
+  const [patientAge, setPatientAge] = useState<string>("");
+  const [ageUnit, setAgeUnit] = useState<string>("ans");
+  const [motifConsultation, setMotifConsultation] = useState<string>("");
   const [selectedCode, setSelectedCode] = useState<string>("");
   const [selectedGestes, setSelectedGestes] = useState<string[]>([]);
   const [totalTarif, setTotalTarif] = useState<number>(0);
+  const [autoSuggestion, setAutoSuggestion] = useState<string>("");
+
+  // Logique de cotation automatique intelligente
+  const getAutomaticCoding = (age: string, unit: string, motif: string): string => {
+    if (!age || !motif) return "";
+
+    const ageInMonths = unit === "mois" ? parseInt(age) : parseInt(age) * 12;
+    const motifLower = motif.toLowerCase();
+
+    // COE pour enfants < 24 mois avec vaccin ou suivi
+    if (ageInMonths < 24 && (
+      motifLower.includes("vaccin") || 
+      motifLower.includes("vaccination") ||
+      motifLower.includes("suivi") ||
+      motifLower.includes("contrôle")
+    )) {
+      return "COE";
+    }
+
+    // CS pour consultations complexes
+    if (motifLower.includes("urgence") || 
+        motifLower.includes("douleur") ||
+        motifLower.includes("fièvre") ||
+        motifLower.includes("complex")) {
+      return "CS";
+    }
+
+    // C pour consultation de base
+    return "C";
+  };
+
+  // Effect pour la cotation automatique
+  useEffect(() => {
+    const suggestedCode = getAutomaticCoding(patientAge, ageUnit, motifConsultation);
+    if (suggestedCode && suggestedCode !== selectedCode) {
+      setAutoSuggestion(suggestedCode);
+    } else {
+      setAutoSuggestion("");
+    }
+  }, [patientAge, ageUnit, motifConsultation, selectedCode]);
 
   const handleCodeSelection = (code: string) => {
     setSelectedCode(code);
     const selectedNGAP = ngapCodes.find(c => c.code === code);
     if (selectedNGAP) {
-      setTotalTarif(selectedNGAP.tarif);
+      setTotalTarif(selectedNGAP.tarif + selectedGestes.reduce((sum, geste) => {
+        const gesteCode = ngapCodes.find(c => c.code === geste);
+        return sum + (gesteCode?.tarif || 0);
+      }, 0));
+    }
+    setAutoSuggestion("");
+  };
+
+  const handleAutoSuggestion = () => {
+    if (autoSuggestion) {
+      handleCodeSelection(autoSuggestion);
     }
   };
 
@@ -63,9 +119,78 @@ const ActeConsultation = () => {
         <Calculator className="w-8 h-8 text-medical-primary" />
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Acte de consultation</h1>
-          <p className="text-gray-600">Cotation NGAP et tarification</p>
+          <p className="text-gray-600">Cotation NGAP automatique et tarification</p>
         </div>
       </div>
+
+      {/* Informations patient et motif */}
+      <Card className="medical-card">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Brain className="w-5 h-5" />
+            <span>Cotation automatique intelligente</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="patientAge">Âge du patient</Label>
+              <Input
+                id="patientAge"
+                type="number"
+                placeholder="Ex: 9"
+                value={patientAge}
+                onChange={(e) => setPatientAge(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="ageUnit">Unité</Label>
+              <Select value={ageUnit} onValueChange={setAgeUnit}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mois">Mois</SelectItem>
+                  <SelectItem value="ans">Ans</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="motifConsultation">Motif de consultation</Label>
+            <Input
+              id="motifConsultation"
+              placeholder="Ex: vaccination, douleur, urgence..."
+              value={motifConsultation}
+              onChange={(e) => setMotifConsultation(e.target.value)}
+            />
+          </div>
+
+          {autoSuggestion && (
+            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h4 className="font-semibold text-green-800 flex items-center space-x-2">
+                    <Brain className="w-4 h-4" />
+                    <span>Suggestion IA : {autoSuggestion}</span>
+                  </h4>
+                  <p className="text-sm text-green-600">
+                    {ngapCodes.find(c => c.code === autoSuggestion)?.libelle} - 
+                    {ngapCodes.find(c => c.code === autoSuggestion)?.tarif}€
+                  </p>
+                </div>
+                <Button 
+                  onClick={handleAutoSuggestion}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  Appliquer
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Sélection du code principal */}
       <Card className="medical-card">
@@ -80,12 +205,12 @@ const ActeConsultation = () => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Type de consultation
             </label>
-            <Select onValueChange={handleCodeSelection}>
+            <Select onValueChange={handleCodeSelection} value={selectedCode}>
               <SelectTrigger>
                 <SelectValue placeholder="Sélectionner le code NGAP principal" />
               </SelectTrigger>
               <SelectContent>
-                {ngapCodes.slice(0, 4).map((code) => (
+                {ngapCodes.slice(0, 5).map((code) => (
                   <SelectItem key={code.code} value={code.code}>
                     <div className="flex justify-between items-center w-full">
                       <span>{code.code} - {code.libelle}</span>
@@ -124,7 +249,7 @@ const ActeConsultation = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {ngapCodes.slice(4).map((geste) => (
+            {ngapCodes.slice(5).map((geste) => (
               <div
                 key={geste.code}
                 className={`p-3 rounded-lg border-2 cursor-pointer transition-colors ${
