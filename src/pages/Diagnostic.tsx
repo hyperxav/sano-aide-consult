@@ -141,7 +141,7 @@ const Diagnostic = () => {
             <div className="p-3 bg-red-50 rounded-lg border border-red-200">
               <h5 className="font-medium text-red-800 mb-2">Signes d'alarme à rechercher :</h5>
               <ul className="text-sm text-red-700 space-y-1">
-                <li>• Fièvre > 38.5°C persistante</li>
+                <li>• Fièvre &gt; 38.5°C persistante</li>
                 <li>• Douleur thoracique avec dyspnée</li>
                 <li>• Signes neurologiques focaux</li>
                 <li>• Altération de l'état général</li>
