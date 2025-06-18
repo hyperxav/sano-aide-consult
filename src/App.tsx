@@ -12,6 +12,7 @@ import Traitement from "./pages/Traitement";
 import Courrier from "./pages/Courrier";
 import ArretTravail from "./pages/ArretTravail";
 import ETP from "./pages/ETP";
+import ActeConsultation from "./pages/ActeConsultation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
               <Route path="/traitement" element={<Traitement />} />
               <Route path="/courrier" element={<Courrier />} />
               <Route path="/arret-travail" element={<ArretTravail />} />
+              <Route path="/acte-consultation" element={<ActeConsultation />} />
               <Route path="/etp" element={<ETP />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

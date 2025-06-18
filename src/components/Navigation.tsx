@@ -8,7 +8,8 @@ import {
   FileText as Letter,
   User,
   Menu,
-  FileDown
+  FileDown,
+  Calculator
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -19,6 +20,7 @@ const navigationItems = [
   { to: '/traitement', label: 'Traitement', icon: Pill },
   { to: '/courrier', label: 'Courrier', icon: Letter },
   { to: '/arret-travail', label: 'Arrêt de travail', icon: FileDown },
+  { to: '/acte-consultation', label: 'Acte de consultation', icon: Calculator },
   { to: '/etp', label: 'Fiche ETP', icon: User },
 ];
 

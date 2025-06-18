@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, CheckCircle, AlertCircle } from 'lucide-react';
+import { Search, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
 import { useMedical } from '@/contexts/MedicalContext';
 
 const Diagnostic = () => {
@@ -125,6 +125,44 @@ const Diagnostic = () => {
               </Button>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Drapeaux rouges à éliminer */}
+      <Card className="medical-card border-red-200">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2 text-red-700">
+            <AlertTriangle className="w-5 h-5" />
+            <span>Drapeaux rouges à éliminer</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+              <h5 className="font-medium text-red-800 mb-2">Signes d'alarme à rechercher :</h5>
+              <ul className="text-sm text-red-700 space-y-1">
+                <li>• Fièvre > 38.5°C persistante</li>
+                <li>• Douleur thoracique avec dyspnée</li>
+                <li>• Signes neurologiques focaux</li>
+                <li>• Altération de l'état général</li>
+                <li>• Signes de déshydratation sévère</li>
+              </ul>
+            </div>
+            
+            {selectedDiagnosis && (
+              <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                <h5 className="font-medium text-orange-800 mb-2">
+                  Drapeaux rouges spécifiques pour "{selectedDiagnosis}" :
+                </h5>
+                <ul className="text-sm text-orange-700 space-y-1">
+                  <li>• Aggravation rapide des symptômes</li>
+                  <li>• Résistance au traitement initial</li>
+                  <li>• Complications associées</li>
+                  <li>• Contexte particulier (âge, comorbidités)</li>
+                </ul>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
