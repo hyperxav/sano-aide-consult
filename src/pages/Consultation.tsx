@@ -19,6 +19,26 @@ interface DictationResult {
   antecedents: string;
 }
 
+interface Step2Response {
+  motif: string;
+  symptomes: string;
+  examen: string;
+  antecedents: string;
+  syntheseSOAP: string;
+  news2: string;
+  drapeauxRouges: string;
+  plan: string;
+  diagnostics: Array<{ cim10: string; libelle: string; prob: number }>;
+  ordonnance: string;
+  courrier: string;
+  ficheETP: string;
+  codeNGAP: string;
+  relance: string;
+  allergies?: string;
+  tttChroniques?: string;
+  date?: string;
+}
+
 const Consultation = () => {
   const { currentConsultation, updateConsultation, analyzeWithAI } = useMedical();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -26,6 +46,7 @@ const Consultation = () => {
   const [iaQuestion, setIaQuestion] = useState<string>("");
   const [showIaQuestion, setShowIaQuestion] = useState<boolean>(false);
   const [isLoadingRelance, setIsLoadingRelance] = useState<boolean>(false);
+  const [step2Data, setStep2Data] = useState<Step2Response | null>(null);
   const [formData, setFormData] = useState({
     patientName: '',
     motif: '',
@@ -221,6 +242,62 @@ const Consultation = () => {
                   ) : iaQuestion}
                 </AlertDescription>
               </Alert>
+            )}
+
+            {/* Synthèse SOAP */}
+            {step2Data && (
+              <div className="space-y-4 mt-6">
+                <h4 className="text-lg font-semibold text-gray-900">Synthèse SOAP</h4>
+                <div className="space-y-2">
+                  <Textarea
+                    id="soapMotif"
+                    value={`S – Motif : ${step2Data.motif}`}
+                    readOnly
+                    className="bg-gray-50 text-sm"
+                    rows={2}
+                  />
+                  <Textarea
+                    id="soapSymptomes"
+                    value={`S – Symptômes : ${step2Data.symptomes}`}
+                    readOnly
+                    className="bg-gray-50 text-sm"
+                    rows={3}
+                  />
+                  <Textarea
+                    id="soapExamen"
+                    value={`O – Examen : ${step2Data.examen}`}
+                    readOnly
+                    className="bg-gray-50 text-sm"
+                    rows={3}
+                  />
+                  <Textarea
+                    id="soapDiagPlan"
+                    value={`Analyse/Plan : ${step2Data.plan}`}
+                    readOnly
+                    className="bg-gray-50 text-sm"
+                    rows={4}
+                  />
+                </div>
+
+                {/* Section Informations Complémentaires */}
+                <div id="infosComplementairesSection" className="mt-4 space-y-1">
+                  <div className="text-sm text-gray-700 mt-1">
+                    <strong>Allergies :</strong> {step2Data.allergies || 'Non précisées'}
+                  </div>
+                  <div className="text-sm text-gray-700 mt-1">
+                    <strong>Traitements chroniques :</strong> {step2Data.tttChroniques || 'Non précisés'}
+                  </div>
+                  <div className="text-sm text-gray-700 mt-1">
+                    <strong>Drapeaux rouges :</strong> {step2Data.drapeauxRouges || 'Aucun'}
+                  </div>
+                  <div className="text-sm text-gray-700 mt-1">
+                    <strong>Code NGAP :</strong> {step2Data.codeNGAP || '—'}
+                  </div>
+                  <div className="text-sm text-gray-700 mt-1">
+                    <strong>Date / Heure :</strong> {step2Data.date || ''}
+                  </div>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
